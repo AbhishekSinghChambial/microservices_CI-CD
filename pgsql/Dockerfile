@@ -1,0 +1,27 @@
+# Use the official PostgreSQL image
+FROM postgres:14
+
+# Set non-interactive mode for apt
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Update package list and install essential tools
+RUN apt-get update && \
+    apt-get install -y \
+    postgresql-contrib \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy custom PostgreSQL configuration files into the container
+COPY postgresql.conf /etc/postgresql/14/main/
+COPY pg_hba.conf /etc/postgresql/14/main/
+
+# Copy SQL script to create database and user
+COPY init.sql /docker-entrypoint-initdb.d/
+
+# Expose the PostgreSQL port
+EXPOSE 5432
+
+# Run psql to execute the init.sql script during image build
+# Restart PostgreSQL service after changing configuration files
+CMD ["postgres", "-c", "config_file=/etc/postgresql/14/main/postgresql.conf"]
+

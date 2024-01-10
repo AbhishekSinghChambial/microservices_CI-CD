@@ -1,0 +1,37 @@
+version: '3'
+
+services:
+  redis-server-container:
+    image: redis-server:latest
+    depends_on:
+      - database-server-container
+
+  database-server-container:
+    image: database-server:latest
+    environment:
+      POSTGRES_PASSWORD: admin
+
+  my-backserver-container:
+    image: my-backserver:latest
+    healthcheck:
+          test: curl localhost:8000 ||  bash -c 'kill -s 15 -1 && (sleep 10; kill -s 9 -1)'
+          interval: 10s
+          timeout: 30s
+          retries: 3
+          start_period: 60s
+    restart: always
+    depends_on:
+      - database-server-container
+
+  worker-server-container:
+    image: worker-server:latest
+    depends_on:
+      - my-backserver-container
+
+  front-container:
+    restart: always
+    image: front:latest
+    ports:
+     - "9000:80"
+       #    depends_on:
+       #      - my-backserver-container
